@@ -8,6 +8,7 @@ from datacash.models import OrderTransaction
 
 
 class Facade(object):
+
     """
     A bridge between oscar's objects and the core gateway object
     """
@@ -127,8 +128,11 @@ class Facade(object):
         # where a previous request crashed out and didn't save a model
         # instance.  Hence we can get a clash of merchant references.
         rand = "%04.f" % (random.random() * 10000)
-        return u'%s_%s_%d_%s' % (order_number, method.upper(), num_previous+1,
-                                 rand)
+        # We truncate our long order number so that it will work with total
+        # limit of 22 characters
+        ref = u'%s_%s_%d_%s' % (order_number[:11], method.upper(), num_previous + 1,
+                                rand)
+        return ref
 
     def fulfill_transaction(self, order_number, amount, txn_reference,
                             auth_code, currency=None):
@@ -173,8 +177,9 @@ class Facade(object):
     # API - 1 stage processing
     # ========================
 
-    def authorise(self, order_number, amount, bankcard=None, txn_reference=None,
-                  billing_address=None, the3rdman_data=None, currency=None):
+    def authorise(
+        self, order_number, amount, bankcard=None, txn_reference=None,
+            billing_address=None, the3rdman_data=None, currency=None):
         """
         Debit a bankcard for the given amount
 
@@ -232,6 +237,7 @@ class Facade(object):
                 merchant_reference=merchant_ref,
                 previous_txn_reference=txn_reference)
         else:
-            raise ValueError("You must specify either a bankcard or a previous txn reference")
+            raise ValueError(
+                "You must specify either a bankcard or a previous txn reference")
         return self.handle_response(gateway.REFUND, order_number, amount,
                                     currency, response)
